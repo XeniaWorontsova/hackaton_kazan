@@ -48,5 +48,27 @@ def db_filter(position):
                     result[index]['is_tested'] = False
             return result
 
-            
-            
+
+def db_get_costing_data():
+    with psycopg2.connect(dbname=db_name, user=user, password=password, host=host) as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute(sql.SQL('SELECT * FROM costing_data'))
+            costing_data = cursor.fetchone()
+            costing_data = dict(zip(costing_data.keys(), costing_data))
+            return costing_data
+
+
+def db_set_costing_data(vacancy_announcement_costs, payment_for_agency_services, reference_bonus, hr_salary_costs):
+    with psycopg2.connect(dbname=db_name, user=user, password=password, host=host) as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute(sql.SQL('UPDATE costing_data SET {} = {}, {} = {}, {} = {}, {} = {}').format(
+                sql.Identifier('vacancy_announcement_costs'),
+                sql.Literal(vacancy_announcement_costs),
+                sql.Identifier('payment_for_agency_services'),
+                sql.Literal(payment_for_agency_services),
+                sql.Identifier('reference_bonus'),
+                sql.Literal(reference_bonus),
+                sql.Identifier('hr_salary_costs'),
+                sql.Literal(hr_salary_costs)
+            )
+        )
