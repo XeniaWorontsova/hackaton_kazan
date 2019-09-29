@@ -72,3 +72,72 @@ def db_set_costing_data(vacancy_announcement_costs, payment_for_agency_services,
                 sql.Literal(hr_salary_costs)
             )
         )
+
+
+def db_get_scill_vacansies():
+    with psycopg2.connect(dbname=db_name, user=user, password=password, host=host) as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute(sql.SQL('SELECT * FROM {}').format(
+                    sql.Identifier('vacancies_competencies')
+                )
+            )
+            vac_skill = cursor.fetchall()
+            vac_skill = [dict(zip(value.keys(), value)) for value in vac_skill]
+            for value in vac_skill:
+                cursor.execute(sql.SQL('SELECT name FROM {} WHERE id={}').format(
+                        sql.Identifier('vacancies'),
+                        sql.Literal(value['vacancies'])
+                    )
+                )
+                value['vacancies'] = cursor.fetchone()[0]
+                cursor.execute(sql.SQL('SELECT name FROM {} WHERE id={}').format(
+                        sql.Identifier('competencies'),
+                        sql.Literal(value['competence'])
+                    )
+                )
+                value['competence'] = cursor.fetchone()[0]
+            result = {}
+            for value in vac_skill:
+                vacancie = value['vacancies']
+                if vacancie not in result:
+                    result[vacancie] = {'competence':{}, 'sum':0}
+                
+                result[vacancie]['competence'][value['competence']] = value['point']
+                result[vacancie]['sum'] += value['point']
+            return result
+
+
+def db_get_scill_worker():
+    with psycopg2.connect(dbname=db_name, user=user, password=password, host=host) as conn:
+        with conn.cursor(cursor_factory=DictCursor) as cursor:
+            cursor.execute(sql.SQL('SELECT * FROM {}').format(
+                    sql.Identifier('worker_competencies')
+                )
+            )
+            vac_skill = cursor.fetchall()
+            vac_skill = [dict(zip(value.keys(), value)) for value in vac_skill]
+            for value in vac_skill:
+                cursor.execute(sql.SQL('SELECT surname, name, patronymic  FROM {} WHERE id={}').format(
+                        sql.Identifier('workers'),
+                        sql.Literal(value['worker'])
+                    )
+                )
+                worker = cursor.fetchone()
+                value['worker'] = worker['surname']+' '+worker['name']+' '+worker['patronymic']
+                cursor.execute(sql.SQL('SELECT name FROM {} WHERE id={}').format(
+                        sql.Identifier('competencies'),
+                        sql.Literal(value['competencies'])
+                    )
+                )
+                value['competencies'] = cursor.fetchone()[0]
+            result = {}
+            for value in vac_skill:
+                worker = value['worker']
+                if worker not in result:
+                    result[worker] = {'competence':{}, 'vacancies':{}}
+                
+                result[worker]['competence'][value['competencies']] = value['point']
+                
+            return result
+
+
